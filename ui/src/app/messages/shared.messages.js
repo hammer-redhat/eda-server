@@ -654,6 +654,10 @@ const sharedMessages = defineMessages({
     id: 'host.nohostsrecentlychnaged',
     defaultMessage: 'No hosts recently changed',
   },
+  backToAuditView: {
+    id: 'audit.backToAuditView',
+    defaultMessage: 'Back to Audit View',
+  },
 });
 
 export default sharedMessages;
