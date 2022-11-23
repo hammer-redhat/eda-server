@@ -12,16 +12,16 @@ export const createRows = (data) =>
             pathname: `/rule/${rule_id}`,
           }}
         >
-          {rule || rule_id}
+          {rule?.name || rule_id}
         </Link>
       </Fragment>,
-      <Fragment key={`[audit-ruleset-${ruleset}`}>
+      <Fragment key={`[audit-ruleset-${ruleset?.id}`}>
         <Link
           to={{
-            pathname: `/ruleset/${ruleset}`,
+            pathname: `/ruleset/${ruleset?.id}`,
           }}
         >
-          {ruleset || ruleset_id}
+          {ruleset?.name || ruleset_id}
         </Link>
       </Fragment>,
       <Fragment key={`[audit-last_fired-${name}`}>

@@ -14,7 +14,6 @@ import {
 } from '@patternfly/react-core';
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { renderRuleTabs } from '@app/Rule/Rule';
 import ReactJsonView from 'react-json-view';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-yaml';
@@ -24,6 +23,7 @@ import { RuleType } from '@app/RuleSets/RuleSets';
 import { ExtraVarType } from '@app/Vars/Vars';
 import { useIntl } from 'react-intl';
 import { fetchRuleVars } from '@app/API/Extravar';
+import {renderAuditRuleTabs} from "@app/AuditView/AuditRule";
 
 const FocusWrapper = styled.div`
   && + .keyboard-help-text {
@@ -225,7 +225,7 @@ const AuditRuleDetails: React.FunctionComponent<{ rule: RuleType }> = ({ rule })
 
   return (
     <PageSection page-type={'rule-details'} id={'rule-details'}>
-      {renderRuleTabs(id, intl)}
+      {renderAuditRuleTabs(id, intl)}
       <Stack>
         <StackItem>
           <Card>

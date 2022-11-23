@@ -9,7 +9,7 @@ export const createRows = (data) =>
       <Fragment key={`[audit-rule-${id}`}>
         <Link
           to={{
-            pathname: `/rule/${id}`,
+            pathname: `/audit-rule/${id}`,
           }}
         >
           {name || id}
@@ -21,17 +21,17 @@ export const createRows = (data) =>
             pathname: `/job/${job_id}`,
           }}
         >
-          {job || job_id}
+          {job?.name || job_id}
         </Link>
       </Fragment>,
       status,
-      <Fragment key={`[audit-ruleset-${ruleset_id}`}>
+      <Fragment key={`[audit-ruleset-${ruleset?.id}`}>
         <Link
           to={{
-            pathname: `/ruleset/${ruleset_id}`,
+            pathname: `/ruleset/${ruleset?.id}`,
           }}
         >
-          {ruleset || ruleset_id}
+          {ruleset?.id || ruleset_id}
         </Link>
       </Fragment>,
       <Fragment key={`[audit-last_fired-${id}`}>
