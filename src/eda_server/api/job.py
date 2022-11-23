@@ -144,8 +144,12 @@ async def read_job_instance(
             models.audit_rules.c.job_instance_id == models.job_instances.c.id,
         )
     ).where(models.job_instances.c.id == job_instance_id)
-    result = await db.execute(query)
-    return result.first()
+    job_instance = (await db.execute(query)).first()
+
+    if job_instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    return job_instance
 
 
 @router.delete(
@@ -181,6 +185,9 @@ async def read_job_instance_events(
         models.job_instances.c.id == job_instance_id
     )
     job = (await db.execute(query)).first()
+
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     query = (
         sa.select(models.job_instance_events)

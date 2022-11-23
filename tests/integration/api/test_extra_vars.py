@@ -80,7 +80,7 @@ async def test_create_extar_var(
             "project_id": project_id,
         },
     )
-    assert response.status_code == status_codes.HTTP_200_OK
+    assert response.status_code == status_codes.HTTP_201_CREATED
     data = response.json()
     assert data["name"] == "test_create_extar_var"
     assert data["extra_var"] == TEST_EXTRA_VAR
