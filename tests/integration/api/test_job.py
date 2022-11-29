@@ -20,7 +20,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from eda_server.db import models
-from eda_server.types import Action, ResourceType
+from eda_server.types import Action, InventorySource, ResourceType
 
 TEST_EXTRA_VAR = """
 ---
@@ -83,7 +83,9 @@ async def test_delete_job_not_found(client: AsyncClient):
     assert response.status_code == status_codes.HTTP_404_NOT_FOUND
 
 
-async def test_rerun_job_with_needed(client: AsyncClient, db: AsyncSession):
+async def test_rerun_job_with_needed(
+    client: AsyncClient, db: AsyncSession, check_permission_spy: mock.Mock
+):
     # prepare project
     query = sa.insert(models.projects).values(name="dummy-project")
     project_id = (await db.execute(query)).inserted_primary_key[0]
@@ -93,6 +95,7 @@ async def test_rerun_job_with_needed(client: AsyncClient, db: AsyncSession):
         name="dummy-inventories",
         inventory=TEST_INVENTORY,
         project_id=project_id,
+        inventory_source=InventorySource.USER_DEFINED,
     )
     inventory_id = (await db.execute(query)).inserted_primary_key[0]
 
@@ -128,7 +131,7 @@ async def test_rerun_job_with_needed(client: AsyncClient, db: AsyncSession):
     query = sa.insert(models.playbooks).values(
         name="dummy-playbooks", playbook=TEST_PLAYBOOK, project_id=project_id
     )
-    playbook_id = (await db.execute(query)).inserted_primary_key[0]
+    await db.execute(query)
 
     jobs = (await db.execute(sa.select(models.job_instances))).all()
     jobs_len = len(jobs)
@@ -137,16 +140,18 @@ async def test_rerun_job_with_needed(client: AsyncClient, db: AsyncSession):
     assert response.status_code == status_codes.HTTP_200_OK
 
     data = response.json()
-    assert data["playbook_id"] == playbook_id
-    assert data["inventory_id"] == inventory_id
-    assert data["extra_var_id"] == extra_var_id
+    assert data["name"] == "dummy-playbooks"
 
     jobs = (await db.execute(sa.select(models.job_instances))).all()
     assert len(jobs) == (jobs_len + 1)
 
+    check_permission_spy.assert_called_once_with(
+        mock.ANY, mock.ANY, ResourceType.JOB, Action.CREATE
+    )
+
 
 async def test_rerun_job_miss_job_instance(
-    client: AsyncClient, db: AsyncSession
+    client: AsyncClient, db: AsyncSession, check_permission_spy: mock.Mock
 ):
     invalid_job_id = 10
     response = await client.post(f"/api/job_instance/{invalid_job_id}")
@@ -155,8 +160,14 @@ async def test_rerun_job_miss_job_instance(
     data = response.json()
     assert data["detail"] == f"Job instance {invalid_job_id} not found"
 
+    check_permission_spy.assert_called_once_with(
+        mock.ANY, mock.ANY, ResourceType.JOB, Action.CREATE
+    )
 
-async def test_rerun_job_miss_playbook(client: AsyncClient, db: AsyncSession):
+
+async def test_rerun_job_miss_playbook(
+    client: AsyncClient, db: AsyncSession, check_permission_spy: mock.Mock
+):
     # prepare project
     query = sa.insert(models.projects).values(name="dummy-project")
     project_id = (await db.execute(query)).inserted_primary_key[0]
@@ -166,6 +177,7 @@ async def test_rerun_job_miss_playbook(client: AsyncClient, db: AsyncSession):
         name="dummy-inventories",
         inventory=TEST_INVENTORY,
         project_id=project_id,
+        inventory_source=InventorySource.USER_DEFINED,
     )
     inventory_id = (await db.execute(query)).inserted_primary_key[0]
 
@@ -203,3 +215,7 @@ async def test_rerun_job_miss_playbook(client: AsyncClient, db: AsyncSession):
 
     data = response.json()
     assert data["detail"] == f"Playbook {invalid_playbook_name} not found"
+
+    check_permission_spy.assert_called_once_with(
+        mock.ANY, mock.ANY, ResourceType.JOB, Action.CREATE
+    )

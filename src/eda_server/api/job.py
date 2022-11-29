@@ -127,6 +127,9 @@ async def create_job_instance(
     "/api/job_instance/{job_instance_id}",
     response_model=schema.JobInstanceRead,
     operation_id="rerun_job_instance",
+    dependencies=[
+        Depends(requires_permission(ResourceType.JOB, Action.CREATE))
+    ],
 )
 async def rerun_job_instance(
     job_instance_id: int, db: AsyncSession = Depends(get_db_session)
@@ -265,11 +268,13 @@ async def rerun_job_instance(
     await db.commit()
 
     return {
-        "playbook_id": playbook_row.id,
-        "inventory_id": inventory_row.id,
-        "extra_var_id": extra_var_row.id,
         "id": new_job_instance_id,
         "uuid": job_uuid,
+        "name": job_instance.name,
+        "ruleset": job_instance.ruleset,
+        "rule": job_instance.rule,
+        "hosts": job_instance.hosts,
+        "action": job_instance.action,
     }
 
 
