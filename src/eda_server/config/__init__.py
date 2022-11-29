@@ -17,6 +17,7 @@ from importlib import resources
 import yaml
 from fastapi.requests import Request
 from pydantic import BaseSettings
+from .enums import DeploymentTypeEnum
 
 
 class Settings(BaseSettings):
@@ -33,7 +34,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://postgres:secret@localhost:5432/eda_server"
     )
 
-    deployment_type: str = "docker"
+    deployment_type: DeploymentTypeEnum = DeploymentTypeEnum.DOCKER
     server_name: str = "localhost"
 
     class Config:
