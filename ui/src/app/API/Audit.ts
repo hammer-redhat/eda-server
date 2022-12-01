@@ -2,9 +2,9 @@ import { defaultSettings } from '@app/shared/pagination';
 import { getAxiosInstance } from '@app/API/baseApi';
 import { AxiosResponse } from 'axios';
 
-const auditRulesEndpoint = '/api/rules';
-const auditHostsEndpoint = '/api/rules';
-const auditRuleEndpoint = '/api/rules';
+const auditRulesEndpoint = '/api/audit/rules_fired';
+const auditHostsEndpoint = '/api/audit/hosts_changed';
+const auditRuleEndpoint = '/api/audit/rules';
 
 export const listAuditRules = (pagination = defaultSettings): Promise<AxiosResponse> =>
   getAxiosInstance().get(auditRulesEndpoint);

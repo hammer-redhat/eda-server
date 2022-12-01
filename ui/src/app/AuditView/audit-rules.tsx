@@ -2,6 +2,7 @@ import { Button, PageSection } from '@patternfly/react-core';
 import React, { useEffect, useReducer, useState } from 'react';
 import { TableToolbarView } from '@app/shared/table-toolbar-view';
 import sharedMessages from '../messages/shared.messages';
+import { cellWidth } from '@patternfly/react-table';
 import TableEmptyState from '@app/shared/table-empty-state';
 import { useIntl } from 'react-intl';
 import { defaultSettings } from '@app/shared/pagination';
@@ -91,7 +92,6 @@ const AuditRules: React.FunctionComponent = () => {
     stateDispatch({ type: 'setFetching', payload: true });
     return listAuditRules(pagination)
       .then((data) => {
-        console.log('Debug - data', data);
         setAuditRules(data?.data);
         return stateDispatch({ type: 'setFetching', payload: false });
       })

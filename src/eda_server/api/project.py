@@ -223,7 +223,7 @@ async def delete_project(
 
 
 @router.get(
-    "/api/playbooks/",
+    "/api/playbooks",
     response_model=List[schema.PlaybookRead],
     operation_id="list_playbooks",
     tags=["playbooks"],
@@ -260,7 +260,7 @@ async def read_playbook(
 
 
 @router.get(
-    "/api/extra_vars/",
+    "/api/extra_vars",
     response_model=List[schema.ExtraVarsRead],
     operation_id="list_extra_vars",
     tags=["extra vars"],
@@ -297,13 +297,14 @@ async def read_extra_var(
 
 
 @router.post(
-    "/api/extra_vars/",
+    "/api/extra_vars",
     response_model=schema.ExtraVarsRead,
     operation_id="create_extra_vars",
     tags=["extra vars"],
     dependencies=[
         Depends(requires_permission(ResourceType.EXTRA_VAR, Action.CREATE))
     ],
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_extra_vars(
     e: schema.ExtraVarsCreate, db: AsyncSession = Depends(get_db_session)

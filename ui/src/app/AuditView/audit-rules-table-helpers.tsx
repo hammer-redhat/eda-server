@@ -3,25 +3,25 @@ import { Link } from 'react-router-dom';
 import { Text, TextVariants } from '@patternfly/react-core';
 
 export const createRows = (data) =>
-  data.map(({ id, name, job, job_id, status, ruleset, ruleset_id, last_fired_at }) => ({
-    id,
+  data.map(({ rule, job, status, ruleset, fired_date }) => ({
+    rule,
     cells: [
-      <Fragment key={`[audit-rule-${id}`}>
+      <Fragment key={`[audit-rule-${rule?.id}`}>
         <Link
           to={{
-            pathname: `/audit-rule/${id}`,
+            pathname: `/rule/${rule?.id}`,
           }}
         >
-          {name || id}
+          {rule?.name || rule?.id}
         </Link>
       </Fragment>,
-      <Fragment key={`[audit-job-${job_id}`}>
+      <Fragment key={`[audit-job-${job?.id}`}>
         <Link
           to={{
-            pathname: `/job/${job_id}`,
+            pathname: `/job/${job?.id}`,
           }}
         >
-          {job?.name || job_id}
+          {job?.name || job?.id}
         </Link>
       </Fragment>,
       status,
@@ -31,6 +31,13 @@ export const createRows = (data) =>
             pathname: `/ruleset/${ruleset?.id}`,
           }}
         >
+          {ruleset?.name || ruleset?.id}
+        </Link>
+      </Fragment>,
+      <Fragment key={`[audit-last_fired-${rule?.id}`}>
+        <Text component={TextVariants.small}>
+          {new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'long' }).format(
+            new Date(fired_date || 0)
           {ruleset?.id || ruleset_id}
         </Link>
       </Fragment>,

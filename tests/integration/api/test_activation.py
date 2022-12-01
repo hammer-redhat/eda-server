@@ -15,6 +15,7 @@
 from unittest import mock
 
 import sqlalchemy as sa
+from asyncpg_lostream.lostream import PGLargeObject
 from fastapi import status as status_codes
 from httpx import AsyncClient
 from sqlalchemy import func
@@ -23,7 +24,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from eda_server.db import models
 from eda_server.db.models.activation import RestartPolicy
 from eda_server.db.sql import base as bsql
-from eda_server.db.utils.lostream import PGLargeObject
 from eda_server.types import Action, InventorySource, ResourceType
 
 TEST_ACTIVATION = {
@@ -159,7 +159,7 @@ async def test_create_activation(
         "/api/activations",
         json=my_test_activation,
     )
-    assert response.status_code == status_codes.HTTP_200_OK
+    assert response.status_code == status_codes.HTTP_201_CREATED
     data = response.json()
     assert data["name"] == TEST_ACTIVATION["name"]
 
