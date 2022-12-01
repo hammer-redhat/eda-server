@@ -69,6 +69,7 @@ if ssh_agent is None:
 
 DEFAULT_HOST = "eda-server"
 
+
 def ensure_directory(directory):
     if os.path.exists(directory):
         return directory
@@ -79,10 +80,11 @@ def ensure_directory(directory):
 
 def add_activated_ruleset_executor(
     activation_id: int,
-    executor: Union[aiodocker.docker.DockerContainer,
-                    asyncio.subprocess.Process]
+    executor: Union[
+        aiodocker.docker.DockerContainer, asyncio.subprocess.Process
+    ],
 ) -> None:
-    activated_rulesets[activation_id].append(proc)
+    activated_rulesets[activation_id].append(executor)
 
 
 def create_async_task(
@@ -98,12 +100,10 @@ async def create_fallback_docker_activation(
     port: Union[str, int],
     execution_environment: str,
     host: str = DEFAULT_HOST,
-) -> aiodocker.docker.DockerContainer:
+) -> Tuple[aiodocker.docker.Docker, aiodocker.docker.DockerContainer]:
     docker = aiodocker.Docker()
     try:
-        await aiodocker.images.DockerImages(docker).pull(
-            execution_environment
-        )
+        await aiodocker.images.DockerImages(docker).pull(execution_environment)
 
         logger.debug("Creating fallback/default container")
         logger.debug("Host: %s", host)
@@ -138,6 +138,8 @@ async def create_fallback_docker_activation(
         await docker.close()
         raise
 
+    return (docker, container)
+
 
 async def create_docker_websocket_activation(
     activation_id: int,
@@ -145,12 +147,12 @@ async def create_docker_websocket_activation(
     execution_environment: str,
     default_port: Union[str, int],
     default_host: str = DEFAULT_HOST,
-) -> aiodocker.docker.DockerContainer:
-    config = source.get(config, {})
+) -> Tuple[aiodocker.docker.Docker, aiodocker.docker.DockerContainer]:
+    config = source.get("config", {})
     host = config.get("host", default_host)
     port = config.get("port", default_port)
     exposed_ports = config.get("exposed_ports", {"8000/tcp": {}})
-    extrta_hosts = config.get(
+    extra_hosts = config.get(
         "extra_hosts", ["host.docker.internal:host-gateway"]
     )
     host_config = config.get(
@@ -158,15 +160,13 @@ async def create_docker_websocket_activation(
         {
             "PortBindings": {"8000/tcp": [{"HostPort": "8000"}]},
             "NetworkMode": "eda-network",
-        }
+        },
     )
     environment = config.get("environment", ["ANSIBLE_FORCE_COLOR=True"])
 
     docker = aiodocker.Docker()
     try:
-        await aiodocker.images.DockerImages(docker).pull(
-            execution_environment
-        )
+        await aiodocker.images.DockerImages(docker).pull(execution_environment)
 
         logger.debug("Creating container")
         logger.debug("Host: %s", host)
@@ -198,6 +198,17 @@ async def create_docker_websocket_activation(
         await docker.close()
         raise
 
+    return (docker, container)
+
+
+def resolve_activation_function(source: Dict) -> Callable:
+    # TODO: React to source type
+    activation_type = "websocket"
+    activation_func_name = f"create_docker_{activation_type}_activation"
+    activation_func = globals()[activation_func_name]
+
+    return activation_func
+
 
 async def create_docker_activation(
     activation_id: int,
@@ -205,21 +216,22 @@ async def create_docker_activation(
     execution_environment,
     default_port: Union[str, int],
     default_host: str = DEFAULT_HOST,
-) -> aiodocker.docker.DockerContainer:
+) -> Tuple[aiodocker.docker.Docker, aiodocker.docker.DockerContainer]:
     # TODO: React to source type
-    activation_type = "websocket"
-    activation_func_name = f"create_docket_{activation_type}_activation"
-    activation_func = globals()[activation_func_name]
-
-    container = await activation_func(
-        activation_id, source, execution_environment, default_port, default_host
+    activation_func = resolve_activation_function(source)
+    docker_container = await activation_func(
+        activation_id,
+        source,
+        execution_environment,
+        default_port,
+        default_host,
     )
-    return container
+
+    return docker_container
 
 
 async def create_local_activation(
-    activation_id: int,
-    working_directory: str
+    activation_id: int, working_directory: str
 ) -> asyncio.subprocess.Process:
     local_working_directory = working_directory
     ensure_directory(local_working_directory)
@@ -271,24 +283,21 @@ async def activate_rulesets(
         add_activated_ruleset_executor(activation_id, proc)
         create_async_task(
             partial(
-                read_output,
-                proc,
-                activation_id,
-                large_data_id,
-                db_factory
+                read_output, proc, activation_id, large_data_id, db_factory
             ),
             f"read_output {proc.pid}",
         )
 
     elif deployment_type in (
-        DeploymentTypeEnum.DOCKER, DeploymentTypeEnumPODMAN
+        DeploymentTypeEnum.DOCKER,
+        DeploymentTypeEnum.PODMAN,
     ):
         if ruleset_sources:
             for source in ruleset_sources:
-                container = await create_docker_activation(
+                docker, container = await create_docker_activation(
                     activation_id,
                     source,
-                    exdecution_environment,
+                    execution_environment,
                     port,
                 )
                 add_activated_ruleset_executor(activation_id, container)
@@ -304,7 +313,7 @@ async def activate_rulesets(
                     f"read_output {proc.pid}",
                 )
         else:
-            container = await create_fallback_docker_activation(
+            docker, container = await create_fallback_docker_activation(
                 activation_id,
                 port,
                 execution_environment,
@@ -322,7 +331,10 @@ async def activate_rulesets(
                 f"read_output {proc.pid}",
             )
 
-    elif deployment_type in (DeploymentTypeEnum.K8S, DeploymentTypeEnum.KUBERNETES):
+    elif deployment_type in (
+        DeploymentTypeEnum.K8S,
+        DeploymentTypeEnum.KUBERNETES,
+    ):
         # Calls to the k8s apis.
         logger.error("k8s deployment not implemented yet")
     else:
