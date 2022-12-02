@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from eda_server.db import models
 from eda_server.db.sql import base as bsql
-from eda_server.db.sql.api import activation as asql
+from eda_server.db.sql.app import activation as asql
 from eda_server.types import InventorySource
 
 TEST_RULESET_SIMPLE = """
@@ -57,18 +57,20 @@ DBTestData = namedtuple(
 
 
 async def test_create_activation_instance(db: AsyncSession):
-    test_data = init_test_data(db)
+    test_data = await init_test_data(db)
 
     old_count = (
         await bsql.get_object(
-            models.activation_instances, [sa.fumc.count().label("count")]
+            db,
+            models.activation_instances,
+            select_cols=[sa.func.count().label("count")],
         )
     ).count
     activation_data = await asql.create_activation_instance(
         db,
         {
             "name": "test-activation-instance",
-            "rulebook_id": test_data.rulebook.id,
+            "rulebook_id": test_data.rulebooks[0].id,
             "inventory_id": test_data.inventory.id,
             "extra_var_id": test_data.extra_var.id,
             "working_directory": "/tmp",
@@ -78,7 +80,9 @@ async def test_create_activation_instance(db: AsyncSession):
     )
     new_count = (
         await bsql.get_object(
-            models.activation_instances, [sa.fumc.count().label("count")]
+            db,
+            models.activation_instances,
+            select_cols=[sa.func.count().label("count")],
         )
     ).count
 
@@ -91,11 +95,15 @@ async def test_create_activation_instance(db: AsyncSession):
         "extra_var",
     }
 
+    assert activation_data is not None
+    assert activation_data.activation_instance_id is not None
+
     assert new_count > old_count
     assert isinstance(activation_data, sa.engine.Row)
     assert set(activation_data.keys()) == cols
     for col in cols:
-        assert activation_data[col] is not None
+        err_msg = f"Um, Column {col} is really not supposed to be None."
+        assert activation_data[col] is not None, err_msg
     assert isinstance(activation_data.ruleset_sources, list)
     assert len(activation_data.ruleset_sources) > 0
 
@@ -128,7 +136,7 @@ async def insert_rulebooks(
         {
             "name": "rulebook-1",
             "project_id": project.id,
-            "rulesets": None,
+            "rulesets": str({}),
         },
         {
             "name": "rulebook-2",
