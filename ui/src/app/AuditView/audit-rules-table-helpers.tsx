@@ -38,13 +38,6 @@ export const createRows = (data) =>
         <Text component={TextVariants.small}>
           {new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'long' }).format(
             new Date(fired_date || 0)
-          {ruleset?.id || ruleset_id}
-        </Link>
-      </Fragment>,
-      <Fragment key={`[audit-last_fired-${id}`}>
-        <Text component={TextVariants.small}>
-          {new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'long' }).format(
-            new Date(last_fired_at || 0)
           )}
         </Text>
       </Fragment>,
